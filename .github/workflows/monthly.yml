@@ -1,0 +1,57 @@
+# prevent GitHub Actions from being banned due to inactivity
+name: 'Monthly-Action'
+
+on:
+  # 手动执行此任务
+  workflow_dispatch:
+  # 定时任务执行此任务
+  schedule:
+    # 分钟,小时,天,月,周
+    - cron: '20 1 * * *'
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 本仓库代码拉取
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ github.repository }}
+
+    - name: 更新文件内容
+      run: |
+        date_y=`date "+%Y-%m-%d %H:%M:%S"`
+        month_y=`date "+%m"`
+        if [ "${month_y}" == "12" ]; then
+          # 把之前的内容清空-覆盖数据
+          echo "${date_y}" > monthly.txt
+        else
+          # 追加数据
+          echo "${date_y}" >> monthly.txt
+        fi
+    - name: 执行代码
+      run: |
+        date_y=`date "+%Y-%m-%d %H:%M:%S"`
+        # python sign_login.py
+      env: 
+        LIK_AI_USERNAME: ${{ secrets.LIK_AI_USERNAME }}
+        LIK_AI_PWD: ${{ secrets.LIK_AI_PWD }}
+    - name: 本仓库文件代码提交
+      run: |
+        git config --local user.name github-actions[bot]
+        git config --local user.email github-actions[bot]@users.noreply.github.com
+        git status
+        date_y=`date "+%Y-%m-%d %H:%M:%S"`
+        git add monthly.txt
+        git commit -m "Monthly update ${date_y}"
+        git log
+        # 代码提交-如果提交不上去-记得在本仓库中的Settings-->>Actions-->>General-->>Workflow permissions[选中Read and write permissions和Allow GitHub Actions to create and approve pull requests]
+        git push origin
+
+
+
+
+
